@@ -93,7 +93,7 @@ if __name__ == '__main__':
     pages = target_num//show_per_page
     data = pd.DataFrame()
 
-    for i in range(3):
+    for i in range(pages):
         temp = pd.DataFrame()
         formula_list = []
         search_url = 'https://arxiv.org/list/cs/2001?skip={}&show={}'.format(i * show_per_page,show_per_page)
