@@ -15,22 +15,22 @@ headers = {
 DOWNLOAD_DIR = 'Downloads/'
 
 def download_tar(file_name, dir):
-    
+    print("\nDownloading: \033[1;31;40m{}.tar.gz\033[0m".format(file_name))
     url = url_base + file_name
     file_name += '.tar.gz'
     file_path = os.path.join(dir, file_name)
     if os.path.exists(file_path):
-        print("File {} Already Exisist".format(file_name))
+        print("File \033[1;31;40m{}\033[0m Already Exisist.\n\033[1;36;40mSize : {} Bytes\033[0m.".format(file_name,os.path.getsize(file_path)))
         return file_path
     else:
         req = requests.get(url,headers=headers)
         if req.status_code == 200:
             with open(file_path, 'wb') as f:
                 f.write(req.content)
-            print('Finish Download: {}'.format(file_name))
+            print('Finish Download: {}. \n\033[1;36;40m\033[1;36;40mSize : {} Bytes\033[0m.'.format(file_name, os.path.getsize(file_path)))
             return file_path
         else:
-            print('Download {} Failed.'.format(file_name))
+            print('\033[1;36;40mDownload {} Failed.\033[0m'.format(file_name))
             return None
 
 def un_tar(file):
@@ -42,6 +42,7 @@ def un_tar(file):
         os.mkdir(file + '_files')
         for name in names:
             tar.extract(name, file + '_files')
+    # print("Unzip File Finished.")
     return file + '_files'
 
 def find_texs(untar_file):
@@ -65,9 +66,55 @@ def parse_texs(files):
             content = content.replace('\n','')
             result = rule.findall(content)
         results += result
+    print("\033[1;32;40mTotal {} Formula Found.\033[0m".format(len(results)))
     return {index:value for index, value in enumerate(results)}
 
 def clean_files(tar_file, folder):
     shutil.rmtree(folder)
     os.remove(tar_file)
+
+def get_paper_num(url):
+    req = requests.get(url, headers=headers)
+    soup = BeautifulSoup(req.text, 'xml')
+    targets = soup.findAll('small')
+    return int(re.findall('total of (.*?) entries',targets[0].text)[0])
+
+def get_index_per_page(search_url):
+    req = requests.get(search_url,headers=headers)
+    soup = BeautifulSoup(req.text, 'xml')
+    results = soup.find_all('a', title = 'Other formats' )
+    print("Find {} available files.".format(len(results)))
+    return [each.get('href')[8:] for each in results]
+
+if __name__ == '__main__':
+    url = 'https://arxiv.org/list/cs/2001'
+    show_per_page = 5
+    target_num = get_paper_num(url)
+    pages = target_num//show_per_page
+    data = pd.DataFrame()
+
+    for i in range(3):
+        temp = pd.DataFrame()
+        formula_list = []
+        search_url = 'https://arxiv.org/list/cs/2001?skip={}&show={}'.format(i * show_per_page,show_per_page)
+        download_list = get_index_per_page(search_url)
+        temp['paper_id'] = download_list
+        for each in download_list:
+            tar_file = download_tar(each, DOWNLOAD_DIR)
+            untar_file = un_tar(tar_file)
+            texs = find_texs(untar_file)
+            formula_list.append(str(parse_texs(texs)))
+            # clean_files(tar_file, untar_file)
+        temp['formula_json'] = formula_list
+        data = pd.concat([data, temp], axis=0)
+        data.to_csv("2001.csv",index=False)
+    
+
+        
+
+
+
+
+        
+
 
