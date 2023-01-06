@@ -88,7 +88,7 @@ def get_index_per_page(search_url):
 
 if __name__ == '__main__':
     url = 'https://arxiv.org/list/cs/2001'
-    show_per_page = 5
+    show_per_page = 50 # This should be larger than 5
     target_num = get_paper_num(url)
     pages = target_num//show_per_page
     data = pd.DataFrame()
@@ -100,14 +100,35 @@ if __name__ == '__main__':
         download_list = get_index_per_page(search_url)
         temp['paper_id'] = download_list
         for each in download_list:
-            tar_file = download_tar(each, DOWNLOAD_DIR)
-            untar_file = un_tar(tar_file)
-            texs = find_texs(untar_file)
-            formula_list.append(str(parse_texs(texs)))
+            try:
+                tar_file = download_tar(each, DOWNLOAD_DIR)
+            except:
+                print("\033[1;31;40mCDownload Failed.\033[0m")
+                formula_list.append("Download Failed.")
+                continue
+            try:
+                untar_file = un_tar(tar_file)
+            except:
+                print("\033[1;31;40mCould not Unzip .tar file.\033[0m")
+                formula_list.append("Unzip Failed.")
+                continue
+            try:
+                texs = find_texs(untar_file)
+            except:
+                print("\033[1;31;40mCounld not load texes.\033[0m")
+                formula_list.append("Counld not load texes")
+                continue
+            try:
+                content = str(parse_texs(texs))
+            except:
+                print("\033[1;31;40mParsing Failed.\033[0m")
+                formula_list.append("Parsing Failed.")
+                continue
+            formula_list.append(content)
             # clean_files(tar_file, untar_file)
         temp['formula_json'] = formula_list
         data = pd.concat([data, temp], axis=0)
-        data.to_csv("2001.csv",index=False)
+        data.to_csv("Outputs/2001.csv",index=False)
     
 
         
