@@ -4,7 +4,7 @@
 - [x] step2 : Download papers.
 - [x] step3 : Parse papers.
 - [x] step4 : Store and clean.
-- [ ] step5 : Deploy in my web server. 
+- [x] step5 : Deploy in my web server. 
 
 # How to use
 
